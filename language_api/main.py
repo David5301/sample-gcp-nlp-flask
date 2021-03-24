@@ -7,9 +7,6 @@ from flask import Flask, redirect, render_template, request
 from google.cloud import datastore
 from google.cloud import language_v1 as language
 
-
-
-
 app = Flask(__name__)
 
 
@@ -44,6 +41,10 @@ def upload_text():
     if sentiment == 0:
         overall_sentiment = 'neutral'
 
+    # Topic Analysis 
+    # Identify the text category
+    categories = gcp_classify_text(text)
+
     # Create a Cloud Datastore client.
     datastore_client = datastore.Client()
 
@@ -65,9 +66,17 @@ def upload_text():
     entity["text"] = text
     entity["timestamp"] = current_datetime
     entity["sentiment"] = overall_sentiment
+    for category in categories:
+        print(f"category  : {category.name}")
+        entity["category"] = category.name
 
     # Save the new entity to Datastore.
     datastore_client.put(entity)
+
+
+
+
+    
 
     # Redirect to the home page.
     return redirect("/")
@@ -85,6 +94,17 @@ def server_error(e):
         ),
         500,
     )
+
+def gcp_classify_text(text):
+    client = language.LanguageServiceClient()
+    document = language.Document(content=text, type_=language.Document.Type.PLAIN_TEXT)
+    response = client.classify_text(document=document)
+    for category in response.categories:
+        print("=" * 80)
+        print(f"category  : {category.name}")
+        print(f"confidence: {category.confidence:.0%}")
+    return response.categories    
+
 def analyze_text_sentiment(text):
     client = language.LanguageServiceClient()
     document = language.Document(content=text, type_=language.Document.Type.PLAIN_TEXT)
