@@ -30,55 +30,12 @@ def upload_text():
     text = request.form["text"]
 
     # Analyse sentiment using Sentiment API call
-    sentiment = analyze_text_sentiment(text)[0].get('sentiment score')
+    sentiment = analyze_text_sentiment(text)
 
-    # Assign a label based on the score
-    overall_sentiment = 'unknown'
-    if sentiment > 0:
-        overall_sentiment = 'positive'
-    if sentiment < 0:
-        overall_sentiment = 'negative'
-    if sentiment == 0:
-        overall_sentiment = 'neutral'
-
-    # Topic Analysis 
     # Identify the text category
-    categories = gcp_classify_text(text)
+    category = gcp_classify_text(text)
 
-    # Create a Cloud Datastore client.
-    datastore_client = datastore.Client()
-
-    # Fetch the current date / time.
-    current_datetime = datetime.now()
-
-    # The kind for the new entity. This is so all 'Sentences' can be queried.
-    kind = "Sentences"
-
-    # Create the Cloud Datastore key for the new entity.
-    key = datastore_client.key(kind, 'sample_task')
-
-    # Alternative to above, the following would store a history of all previous requests as no key
-    # identifier is specified, only a 'kind'. Datastore automatically provisions numeric ids.
-    # key = datastore_client.key(kind)
-
-    # Construct the new entity using the key. Set dictionary values for entity
-    entity = datastore.Entity(key)
-    entity["text"] = text
-    entity["timestamp"] = current_datetime
-    entity["sentiment"] = overall_sentiment
-    for category in categories:
-        print(f"category  : {category.name}")
-        entity["category"] = category.name
-
-    # Save the new entity to Datastore.
-    datastore_client.put(entity)
-
-
-
-
-    
-
-    # Redirect to the home page.
+    save_entity(text, sentiment, category)
     return redirect("/")
 
 
@@ -89,11 +46,9 @@ def server_error(e):
         """
     An internal error occurred: <pre>{}</pre>
     See logs for full stacktrace.
-    """.format(
-            e
-        ),
-        500,
+    """.format(e),500,
     )
+
 
 def gcp_classify_text(text):
     client = language.LanguageServiceClient()
@@ -103,7 +58,9 @@ def gcp_classify_text(text):
         print("=" * 80)
         print(f"category  : {category.name}")
         print(f"confidence: {category.confidence:.0%}")
-    return response.categories    
+    return response.categories[0]    
+
+
 
 def analyze_text_sentiment(text):
     client = language.LanguageServiceClient()
@@ -129,7 +86,45 @@ def analyze_text_sentiment(text):
         item["sentiment magnitude"]=sentence.sentiment.magnitude
         sentence_sentiment.append(item)
 
-    return sentence_sentiment
+    return sentence_sentiment[0].get('sentiment score')
+
+
+def save_entity(text, sentiment, category):
+    # Create a Cloud Datastore client.
+    datastore_client = datastore.Client()
+
+    # The kind for the new entity. This is so all 'Sentences' can be queried.
+    kind = "Sentences"
+
+    # Create the Cloud Datastore key for the new entity.
+    # Alternative to above, the following would store a history of all previous requests as no key
+    # identifier is specified, only a 'kind'. Datastore automatically provisions numeric ids.
+    # key = datastore_client.key(kind)
+    key = datastore_client.key(kind, "sample_task")
+    #key = datastore_client.key(kind)
+
+    # Construct the new entity using the key. Set dictionary values for entity
+    entity = datastore.Entity(key)
+    entity["text"] = text
+    entity["timestamp"] = datetime.now()
+    entity["sentiment"] = sentiment_label(sentiment)
+    entity["category"] = category.name
+
+    # Save the new entity to Datastore.
+    datastore_client.put(entity)
+
+
+
+def sentiment_label(sentiment):
+    # Assign a label based on the score
+    overall_sentiment = 'unknown'
+    if sentiment > 0:
+        overall_sentiment = 'positive'
+    if sentiment < 0:
+        overall_sentiment = 'negative'
+    if sentiment == 0:
+        overall_sentiment = 'neutral'
+    return overall_sentiment    
 
 
 if __name__ == "__main__":
