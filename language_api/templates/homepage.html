@@ -10,11 +10,21 @@
       Upload Text: <input type="text" name="text"><br>
       <input type="submit" name="submit" value="Submit">
     </form>
-    {% for text_entity in text_entities %}
-      <p>Text: {{text_entity['text']}}</p>
-      <p>Uploaded: {{text_entity['timestamp']}}</p>
-      <p>Overall Sentiment: {{text_entity['sentiment']}}</p>
-      <p>Categories: {{text_entity['category']}}</p>
-    {% endfor %}
+        <table border=1>
+        <thead>
+            <th>Text</th>
+            <th>Timestamp</th>
+            <th>Sentiment</th>
+            <th>Topic Category</th>
+        </thead>
+        {% for text_entity in text_entities %}
+            <tr>
+                <td width=55%>{{text_entity['text']}}</td>
+                <td width=15%>{{text_entity['timestamp']}}</td>
+                <td width=15%>{{text_entity['sentiment']}}</td>
+                <td width=15%>{{text_entity['category']}}</td>
+            </tr>
+        {% endfor %}
+    </table>
   </body>
 </html> 
