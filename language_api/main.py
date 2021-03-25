@@ -35,7 +35,11 @@ def upload_text():
     # Identify the text category
     category = gcp_classify_text(text)
 
-    save_entity(text, sentiment, category)
+    #Iedntify the entities
+    entities = gcp_analyze_entities(text)
+
+
+    save_entity(text, sentiment, category, entities)
     return redirect("/")
 
 
@@ -88,8 +92,58 @@ def analyze_text_sentiment(text):
 
     return sentence_sentiment[0].get('sentiment score')
 
+# Entity Analysis
+def gcp_analyze_entities(text, debug=0):
+    client = language.LanguageServiceClient()
+    document = language.Document(content=text, type_=language.Document.Type.PLAIN_TEXT)
+    response = client.analyze_entities(document=document)
+    output = []   
+    
+    # Loop through entitites returned from the API
+    for entity in response.entities:
+        item = {}
+        item["name"]=entity.name
+        item["type"]=language.Entity.Type(entity.type_).name
+        item["Salience"]=entity.salience
+        
+        if debug:
+            print(u"Representative name for the entity: {}".format(entity.name))
 
-def save_entity(text, sentiment, category):
+            # Get entity type, e.g. PERSON, LOCATION, ADDRESS, NUMBER, et al
+            print(u"Entity type: {}".format(language.Entity.Type(entity.type_).name))
+
+            # Get the salience score associated with the entity in the [0, 1.0] range
+            print(u"Salience score: {}".format(entity.salience))
+
+        # Loop over the metadata associated with entity. For many known entities,
+        # the metadata is a Wikipedia URL (wikipedia_url) and Knowledge Graph MID (mid).
+        # Some entity types may have additional metadata, e.g. ADDRESS entities
+        # may have metadata for the address street_name, postal_code, et al.
+        for metadata_name, metadata_value in entity.metadata.items():
+            item[metadata_name]=metadata_value
+            if debug:
+                print(u"{}: {}".format(metadata_name, metadata_value))
+
+        # Loop over the mentions of this entity in the input document.
+        # The API currently supports proper noun mentions.
+        if debug:
+            for mention in entity.mentions:
+                print(u"Mention text: {}".format(mention.text.content))
+                # Get the mention type, e.g. PROPER for proper noun
+                print(
+                    u"Mention type: {}".format(language.EntityMention.Type(mention.type_).name)
+                )
+        output.append(item)
+    
+    # Get the language of the text, which will be the same as
+    # the language specified in the request or, if not specified,
+    # the automatically-detected language.
+    if debug:
+        print(u"Language of the text: {}".format(response.language))
+    
+    return(output)
+
+def save_entity(text, sentiment, category, entities):
     # Create a Cloud Datastore client.
     datastore_client = datastore.Client()
 
@@ -109,9 +163,20 @@ def save_entity(text, sentiment, category):
     entity["timestamp"] = datetime.now()
     entity["sentiment"] = sentiment_label(sentiment)
     entity["category"] = category.name
+    entity["entities"] = to_text(entities)
 
     # Save the new entity to Datastore.
     datastore_client.put(entity)
+
+def to_text(entities):
+    display_text = ""
+    entity_dict = {}
+    for entity in entities:
+        print(entity)
+        if(entity['name'] not in entity_dict.keys()):
+            display_text += entity['name'] + ", "
+            entity_dict[entity['name']] = entity['name']
+    return display_text        
 
 
 

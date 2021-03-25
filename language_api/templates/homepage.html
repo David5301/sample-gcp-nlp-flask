@@ -16,13 +16,15 @@
             <th>Timestamp</th>
             <th>Sentiment</th>
             <th>Topic Category</th>
+            <th>Entities</th>
         </thead>
         {% for text_entity in text_entities %}
             <tr>
-                <td width=55%>{{text_entity['text']}}</td>
-                <td width=15%>{{text_entity['timestamp']}}</td>
-                <td width=15%>{{text_entity['sentiment']}}</td>
-                <td width=15%>{{text_entity['category']}}</td>
+                <td width=60%>{{text_entity['text']}}</td>
+                <td width=10%>{{text_entity['timestamp']}}</td>
+                <td width=10%>{{text_entity['sentiment']}}</td>
+                <td width=10%>{{text_entity['category']}}</td>
+                <td width=10%>{{text_entity['entities']}}</td>
             </tr>
         {% endfor %}
     </table>
