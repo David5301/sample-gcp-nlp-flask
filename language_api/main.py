@@ -174,7 +174,7 @@ def to_text(entities):
     for entity in entities:
         print(entity)
         if(entity['name'] not in entity_dict.keys()):
-            display_text += entity['name'] + ", "
+            display_text += entity['name'] + "(" + entity['type'] + "), "
             entity_dict[entity['name']] = entity['name']
     return display_text        
 

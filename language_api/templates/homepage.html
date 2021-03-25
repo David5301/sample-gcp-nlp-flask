@@ -7,9 +7,15 @@
 <html>
   <body>
     <form action="upload" method="POST" enctype="multipart/form-data">
-      Upload Text: <input type="text" name="text"><br>
-      <input type="submit" name="submit" value="Submit">
+        <table>
+            <tr ><td colspan="2"><b>Please enter the text to be analyzed..</b></td></tr>
+            <tr>
+                <td><textarea id="text" name="text" rows="4" cols="150"></textarea></td>
+                <td style="vertical-align:bottom"><input type="submit" name="submit" value="Submit"></textarea></td>
+            </tr>
+        </table>
     </form>
+        <p><b>Analysis Results:</b></p>
         <table border=1>
         <thead>
             <th>Text</th>
@@ -20,11 +26,11 @@
         </thead>
         {% for text_entity in text_entities %}
             <tr>
-                <td width=60%>{{text_entity['text']}}</td>
-                <td width=10%>{{text_entity['timestamp']}}</td>
-                <td width=10%>{{text_entity['sentiment']}}</td>
-                <td width=10%>{{text_entity['category']}}</td>
-                <td width=10%>{{text_entity['entities']}}</td>
+                <td width=50%>{{text_entity['text']}}</td>
+                <td width=7%>{{text_entity['timestamp']}}</td>
+                <td width=5%>{{text_entity['sentiment']}}</td>
+                <td width=8%>{{text_entity['category']}}</td>
+                <td width=30%>{{text_entity['entities']}}</td>
             </tr>
         {% endfor %}
     </table>
